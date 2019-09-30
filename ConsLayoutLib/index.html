@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="./js/jsonData.js"></script>
+</head>
+<body>
+<script>
+    //第一步：读取json数据
+   console.log(graphData);
+
+    //第二步：生成最短路径矩阵
+
+    function Graph(){
+        this.numVextex = null;
+        this.adjMatrix = [];
+        this.shortestPath = [];
+    }
+
+    var nodesSet = [];
+    for(var i = 0; i < graphData.nodes.length; i++){
+        nodesSet.push(graphData.nodes[i].id);
+    }
+
+    //初始化节点个数
+    var graph = new Graph();
+    graph.numVextex = graphData.nodes.length;
+    //初始化邻接矩阵
+    for(var i = 0; i < graph.numVextex; i++){
+        graph.adjMatrix[i] = [];
+        for(var j = 0; j < graph.numVextex; j++){
+            graph.adjMatrix[i][j] = Infinity;
+        }
+    }
+    //填充邻接矩阵
+    for(var i = 0; i < graphData.links.length; i++){
+        var row  = nodesSet.indexOf(graphData.links[i].source);
+        var col = nodesSet.indexOf(graphData.links[i].target);
+        graph.adjMatrix[row][col] = graphData.links[i].value;
+        graph.adjMatrix[col][row] = graphData.links[i].value;
+    }
+    for(var i = 0; i < graph.numVextex; i++){
+        graph.adjMatrix[i][i] = 0;
+    }
+    alert(graphData.links.length);
+    console.log(graph.adjMatrix);
+
+    //根据邻接矩阵的得到最短路径矩阵
+    //Dijkstra
+    function Dijkstra(matrix, start) {
+        const rows = matrix.length,//rows和cols一样，其实就是顶点个数
+            cols = matrix[0].length;
+
+        if(rows !== cols || start >= rows) return new Error("邻接矩阵错误或者源点错误");
+
+        var distance = new Array(rows).fill(Infinity);
+        var flag = new Array(rows).fill(false);
+        distance[start] = 0;
+        for(var i = 0; i < cols; i++){
+            var min = Infinity;
+            var minINdex = start;
+
+            for(let j = 0; j < cols; j++){
+                if(!flag[j] && (distance[j] < min)){
+                    min = distance[j];
+                    minINdex = j;
+                }
+            }
+
+            distance[minINdex] = min;
+            flag[minINdex] = true;
+
+            for(let j = 0; j < cols; j++){
+                if(!flag[j] && (distance[minINdex] + matrix[minINdex][j]) < distance[j]){
+                    distance[j] = distance[minINdex] + matrix[minINdex][j];
+                }
+            }
+        }
+
+        return distance;
+    }
+    //填充最短路径矩阵
+    for(let i = 0; i < graph.numVextex; i++){
+        graph.shortestPath[i] = Dijkstra(graph.adjMatrix, i);
+    }
+
+    //填充矩阵L
+    matrixL = [];
+    for(let i = 0; i < graph.numVextex; i++){
+        matrixL[i] = new Array(graph.numVextex).fill(0);
+        for (let j = 0; j < graph.numVextex; j++){
+            if(i!=j){
+                matrixL[i][j] = -1/ Math.pow(graph.shortestPath[i][j], 2);
+            }
+            else{
+                matrixL[i][i] += Math.pow(graph.shortestPath[i][j], 2);
+            }
+        }
+    }
+    console.log(matrixL);
+
+    //填充矩阵J
+    //初始化矩阵
+    matrixJ = [];
+    for(let i = 0; i < graph.numVextex; i++){
+        matrixJ[i] = new Array(graph.numVextex*(graph.numVextex+1)/2).fill(0);
+    }
+    //填充
+    var coun = 0;
+    for(let i = 0; i < graphData.nodes.length - 1; i++){
+       for(let j = i+1; j < graphData.nodes.length; j++){
+            matrixJ[i][coun] = 1/Math.pow(graph.shortestPath[i][j], 2);
+            matrixJ[j][coun] = -1/Math.pow(graph.shortestPath[i][j], 2);
+            coun += 1;
+       }
+    }
+    console.log(matrixJ);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</script>
+</body>
+</html>
